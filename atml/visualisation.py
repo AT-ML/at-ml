@@ -4,8 +4,6 @@ import scipy.stats
 import scipy.special
 import matplotlib.pyplot
 import tensorflow as tf
-from data import dataset_list
-from model import model_list
 from irt import Beta_3_IRT, Logistic_IRT, GP_IRT
 
 import matplotlib
@@ -17,55 +15,22 @@ m_list = ['Acc', 'BS', 'LL', 'B-Acc', 'AUC', 'F1']
 eps = 1e-6
 
 
-def get_beta3_curve(target_measure=2):
-
-    res = pandas.read_csv('./res/res_sparse.csv', header=None).to_numpy()
-
-    res[:, 3] = (1 - (res[:, 3] / 2))
-
-    res[:, 4] = numpy.exp(- res[:, 4])
-
-    measure = res[:, target_measure]
-
-    measure[measure <= eps] = eps
-
-    measure[measure >= (1.0 - eps)] = 1 - eps
-
-    beta_mdl = Beta_3_IRT()
-    beta_mdl.N_dataset = len(dataset_list)
-    beta_mdl.N_model = len(model_list)
-
-    beta_mdl.logit_theta = numpy.loadtxt('./irt/' + str(target_measure) + '_logit_theta_beta3.csv', delimiter=',')
-    beta_mdl.logit_delta = numpy.loadtxt('./irt/' + str(target_measure) + '_logit_delta_beta3.csv', delimiter=',')
-    beta_mdl.log_a = numpy.loadtxt('./irt/' + str(target_measure) + '_log_a_beta3.csv', delimiter=',')
-    beta_mdl.parameter = numpy.hstack([beta_mdl.logit_theta.ravel(),
-                                       beta_mdl.logit_delta.ravel(),
-                                       beta_mdl.log_a.ravel()])
-
-    for d_id in range(0, len(dataset_list)):
-        tmp_E, E_up, E_mid, E_low = beta_mdl.curve(d_id)
-        matplotlib.pyplot.figure(dpi=256, figsize=(4, 3))
-        matplotlib.pyplot.plot(numpy.linspace(-0.5, 0.5, 128) + 0.5, tmp_E, 'b')
-        matplotlib.pyplot.plot(numpy.linspace(-0.5, 0.5, 128) + 0.5, E_up, 'b--')
-        matplotlib.pyplot.plot(numpy.linspace(-0.5, 0.5, 128) + 0.5, E_mid, 'b--')
-        matplotlib.pyplot.plot(numpy.linspace(-0.5, 0.5, 128) + 0.5, E_low, 'b--')
-        tmp_idx = (res[:, 1] == d_id)
-        tmp_theta = 1 / (1 + numpy.exp(beta_mdl.logit_theta[res[tmp_idx, 0].astype('int')]))
-        matplotlib.pyplot.plot(tmp_theta, measure[tmp_idx], 'ko', alpha=0.05)
-        tmp_theta_0 = 1 / (1 + numpy.exp(beta_mdl.logit_theta[0]))
-        matplotlib.pyplot.plot([tmp_theta_0, tmp_theta_0], [-0.05, 1.05], 'r-x')
-        tmp_theta_1 = 1 / (1 + numpy.exp(beta_mdl.logit_theta[-9]))
-        matplotlib.pyplot.plot([tmp_theta_1, tmp_theta_1], [-0.05, 1.05], 'g-x')
-        matplotlib.pyplot.xlim([-0.05, 1.05])
-        matplotlib.pyplot.xlabel('model ability')
-        matplotlib.pyplot.title('beta:  ' + dataset_list[d_id])
-        matplotlib.pyplot.ylim([-0.05, 1.05])
-        matplotlib.pyplot.ylabel('response:  ' + m_list[target_measure - 2])
-        matplotlib.pyplot.xticks([tmp_theta_0, tmp_theta_1], ['MLP', 'NB'], rotation=-90)
-        matplotlib.pyplot.grid()
-        matplotlib.pyplot.tight_layout()
-        matplotlib.pyplot.savefig('./figures/rc/' + str(target_measure) + '_' + str(d_id) + '_beta.png')
-        matplotlib.pyplot.close()
+def get_beta3_curve(data_idx, data_ref, beta_mdl, res, measure):
+    tmp_E, E_up, E_mid, E_low = beta_mdl.curve(data_idx)
+    matplotlib.pyplot.figure(dpi=256, figsize=(4, 3))
+    matplotlib.pyplot.plot(numpy.linspace(-0.5, 0.5, 128) + 0.5, tmp_E, 'b')
+    matplotlib.pyplot.plot(numpy.linspace(-0.5, 0.5, 128) + 0.5, E_up, 'b--')
+    matplotlib.pyplot.plot(numpy.linspace(-0.5, 0.5, 128) + 0.5, E_mid, 'b--')
+    matplotlib.pyplot.plot(numpy.linspace(-0.5, 0.5, 128) + 0.5, E_low, 'b--')
+    tmp_idx = (res['data_idx'].to_numpy() == data_idx)
+    tmp_theta = 1 / (1 + numpy.exp(beta_mdl.logit_theta.numpy()[res['model_idx'].to_numpy()[tmp_idx].astype('int')]))
+    matplotlib.pyplot.plot(tmp_theta, measure.transform(res[measure.name].to_numpy())[tmp_idx], 'ko', alpha=0.5)
+    matplotlib.pyplot.xlim([-0.05, 1.05])
+    matplotlib.pyplot.xlabel('model ability')
+    matplotlib.pyplot.title('beta:  ' + data_ref)
+    matplotlib.pyplot.ylim([-0.05, 1.05])
+    matplotlib.pyplot.ylabel('response:  ' + measure.name)
+    matplotlib.pyplot.grid()
 
 
 def get_beta3_figures(target_measure=2):
@@ -153,63 +118,23 @@ def get_beta3_figures(target_measure=2):
         matplotlib.pyplot.close()
 
 
-def get_logistic_curve(target_measure=2):
-
-    res = pandas.read_csv('./res/res_sparse.csv', header=None).to_numpy()
-
-    res[:, 3] = (1 - (res[:, 3] / 2))
-
-    res[:, 4] = numpy.exp(- res[:, 4])
-
-    measure = res[:, target_measure]
-
-    measure[measure <= eps] = eps
-
-    measure[measure >= (1.0 - eps)] = 1 - eps
-
-    logistic_mdl = Logistic_IRT()
-    logistic_mdl.N_dataset = len(dataset_list)
-    logistic_mdl.N_model = len(model_list)
-
-    logistic_mdl.theta = numpy.loadtxt('./irt/' + str(target_measure) + '_theta_logistic.csv', delimiter=',')
-    logistic_mdl.delta = numpy.loadtxt('./irt/' + str(target_measure) + '_delta_logistic.csv', delimiter=',')
-    logistic_mdl.log_a = numpy.loadtxt('./irt/' + str(target_measure) + '_log_a_logistic.csv', delimiter=',')
-    logistic_mdl.log_s2 = numpy.loadtxt('./irt/' + str(target_measure) + '_log_s2_logistic.csv', delimiter=',')
-    logistic_mdl.parameter = numpy.hstack([logistic_mdl.theta.ravel(),
-                                           logistic_mdl.delta.ravel(),
-                                           logistic_mdl.log_a.ravel(),
-                                           logistic_mdl.log_s2.ravel()])
-
+def get_logistic_curve(data_idx, data_ref, logistic_mdl, res, measure):
     theta_edge = numpy.max(numpy.abs(logistic_mdl.theta)) * 2
-
-    for d_id in range(0, len(dataset_list)):
-        tmp_E, E_up, E_mid, E_low = logistic_mdl.curve(d_id)
-        matplotlib.pyplot.figure(dpi=256, figsize=(4, 3))
-        matplotlib.pyplot.plot(numpy.linspace(-theta_edge, theta_edge, 128),
-                               tmp_E, 'b')
-        matplotlib.pyplot.plot(numpy.linspace(-theta_edge, theta_edge, 128),
-                               E_up, 'b--')
-        matplotlib.pyplot.plot(numpy.linspace(-theta_edge, theta_edge, 128),
-                               E_mid, 'b--')
-        matplotlib.pyplot.plot(numpy.linspace(-theta_edge, theta_edge, 128),
-                               E_low, 'b--')
-        tmp_idx = (res[:, 1] == d_id)
-        tmp_theta = logistic_mdl.theta[res[tmp_idx, 0].astype('int')]
-        matplotlib.pyplot.plot(tmp_theta, measure[tmp_idx], 'ko', alpha=0.05)
-        tmp_theta_0 = logistic_mdl.theta[0]
-        matplotlib.pyplot.plot([tmp_theta_0, tmp_theta_0], [-0.05, 1.05], 'r-x')
-        tmp_theta_1 = logistic_mdl.theta[-9]
-        matplotlib.pyplot.plot([tmp_theta_1, tmp_theta_1], [-0.05, 1.05], 'g-x')
-        matplotlib.pyplot.xlim([-theta_edge, theta_edge])
-        matplotlib.pyplot.xlabel('model ability')
-        matplotlib.pyplot.title('logistic:  ' + dataset_list[d_id])
-        matplotlib.pyplot.ylim([-0.05, 1.05])
-        matplotlib.pyplot.ylabel('response:  ' + m_list[target_measure-2])
-        matplotlib.pyplot.xticks([tmp_theta_0, tmp_theta_1], ['MLP', 'NB'], rotation=-90)
-        matplotlib.pyplot.grid()
-        matplotlib.pyplot.tight_layout()
-        matplotlib.pyplot.savefig('./figures/rc/' + str(target_measure) + '_' + str(d_id) + '_logistic.png')
-        matplotlib.pyplot.close()
+    tmp_E, E_up, E_mid, E_low = logistic_mdl.curve(data_idx)
+    matplotlib.pyplot.figure(dpi=256, figsize=(4, 3))
+    matplotlib.pyplot.plot(numpy.linspace(-theta_edge, theta_edge, 128), tmp_E, 'b')
+    matplotlib.pyplot.plot(numpy.linspace(-theta_edge, theta_edge, 128), E_up, 'b--')
+    matplotlib.pyplot.plot(numpy.linspace(-theta_edge, theta_edge, 128), E_mid, 'b--')
+    matplotlib.pyplot.plot(numpy.linspace(-theta_edge, theta_edge, 128), E_low, 'b--')
+    tmp_idx = (res['data_idx'].to_numpy() == data_idx)
+    tmp_theta = logistic_mdl.theta.numpy()[res['model_idx'].to_numpy()[tmp_idx].astype('int')]
+    matplotlib.pyplot.plot(tmp_theta, measure.transform(res[measure.name].to_numpy())[tmp_idx], 'ko', alpha=0.5)
+    matplotlib.pyplot.xlim([-theta_edge, theta_edge])
+    matplotlib.pyplot.xlabel('model ability')
+    matplotlib.pyplot.title('logistic:  ' + data_ref)
+    matplotlib.pyplot.ylim([-0.05, 1.05])
+    matplotlib.pyplot.ylabel('response:  ' + measure.name)
+    matplotlib.pyplot.grid()
 
 
 def get_logistic_figures(target_measure=2):

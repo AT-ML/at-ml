@@ -400,7 +400,7 @@ class Beta_3_IRT:
 
         self.parameter = None
 
-    def fit(self, dataset_list, dataset, model_list, model, all_measure, target_measure=2):
+    def fit(self, dataset_list, dataset, model_list, model, measure):
 
         self.N_dataset = len(dataset_list)
 
@@ -414,12 +414,6 @@ class Beta_3_IRT:
 
         parameter = tf.cast(numpy.hstack([self.logit_theta, self.logit_delta, self.log_a]), 'float32')
 
-        all_measure[:, 3] = (1 - (all_measure[:, 3] / 2))
-
-        all_measure[:, 4] = numpy.exp(- all_measure[:, 4])
-
-        measure = all_measure[:, target_measure]
-
         measure[measure <= eps] = eps
 
         measure[measure >= (1.0 - eps)] = 1 - eps
@@ -431,8 +425,9 @@ class Beta_3_IRT:
         parameter = parameter_update(theta_0=tf.Variable(parameter), data=data, extra_args=extra_args,
                                      obj=get_obj, obj_g=get_obj_g,
                                      lr=1e-3,
-                                     batch_size=512, val_size=None, factr=0.0, tol=8192,
-                                     max_batch=int(1e8))
+                                     batch_size=8,
+                                     val_size=None, factr=0.0, tol=1024,
+                                     max_batch=int(1e8), plot_loss=False)
 
         self.parameter = parameter
 
@@ -480,7 +475,7 @@ class Logistic_IRT:
 
         self.log_s2 = None
 
-    def fit(self, dataset_list, dataset, model_list, model, all_measure, target_measure=0):
+    def fit(self, dataset_list, dataset, model_list, model, measure):
 
         self.N_dataset = len(dataset_list)
 
@@ -496,12 +491,6 @@ class Logistic_IRT:
 
         parameter = tf.cast(numpy.hstack([self.theta, self.delta, self.log_a, self.log_s2]), 'float32')
 
-        all_measure[:, 3] = (1 - (all_measure[:, 3] / 2))
-
-        all_measure[:, 4] = numpy.exp(- all_measure[:, 4])
-
-        measure = all_measure[:, target_measure]
-
         measure[measure <= eps] = eps
 
         measure[measure >= (1.0 - eps)] = 1 - eps
@@ -513,8 +502,8 @@ class Logistic_IRT:
         parameter = parameter_update(theta_0=tf.Variable(parameter), data=data, extra_args=extra_args,
                                      obj=get_obj, obj_g=get_obj_g,
                                      lr=1e-3,
-                                     batch_size=512, val_size=None, factr=0.0, tol=8192,
-                                     max_batch=int(1e8))
+                                     batch_size=8, val_size=None, factr=0.0, tol=1024,
+                                     max_batch=int(1e8), plot_loss=False)
 
         self.parameter = parameter
 
