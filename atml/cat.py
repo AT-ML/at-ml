@@ -1,155 +1,165 @@
+"""
+The :mod:'atml.cat' module contains a set of functions to perform adaptive testing on predictive ML models.
+"""
+# Author: Hao Song (nuacesh@gmail.com)
+# License: BSD-3
+
 import numpy
 
 import scipy.stats
 
 import tensorflow as tf
 
-from tensorflow import keras
-
-from data import dataset_list, load_dataset
-
-from measure import measures_all
-
-from irt import psi
-
-from exp import get_random_split_measurement
+from exp import get_single_testing
 
 from adhoc_opt.optimiser import parameter_update
 
-import matplotlib
-
 import copy
-
-matplotlib.use('Agg')
-
-import matplotlib.pyplot
 
 tf.compat.v1.enable_eager_execution()
 
-# tf.compat.v1.enable_eager_execution()
+pi = tf.constant(numpy.pi, dtype='float32')
 
-# lr_list = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
+eps = 1e-6
 
 
 class Standard_CAT:
+    """
 
-    def __init__(self, irt_type='beta3', N_dataset=None, parameter_list=None):
+    The class for a standard adaptive testing on ML models
 
-        self.N_dataset = N_dataset
-        self.irt_type = irt_type
-        # self.logit_delta = None
-        # self.delta = None
-        # self.log_a = None
-        # self.log_s2 = None
-        # self.N_approx = None
-        # self.mu_alpha = None
-        # self.L_alpha = None
-        # self.dataset_log_s2 = None
-        # self.e_0 = None
+    """
 
-        if irt_type == 'beta3':
-            self.logit_delta = tf.cast(parameter_list[0], 'float32')
-            self.log_a = tf.cast(parameter_list[1], 'float32')
-        elif irt_type == 'logistic':
-            self.delta = tf.cast(parameter_list[0], 'float32')
-            self.log_a = tf.cast(parameter_list[1], 'float32')
-            self.log_s2 = tf.cast(parameter_list[2], 'float32')
-        elif irt_type == 'gp':
-            self.N_approx = tf.cast(parameter_list[0], 'int32')
-            self.mu_alpha = tf.cast(parameter_list[1], 'float32')
-            self.L_alpha = tf.cast(parameter_list[2], 'float32')
-            self.dataset_log_s2 = tf.cast(parameter_list[3], 'float32')
-            self.e_0 = tf.cast(parameter_list[4], 'float32')
+    def __init__(self, irt_mdl):
+        """
 
-    def testing(self, mdl=None, model_theta=None,
-                test_all_measure=None,
-                test_size=0.5, target_measure=2,
-                item_info='fisher', N_test=None, remove_tested=True):
+        Parameters
+        ----------
+        irt_mdl: atml.irt
+            A trained IRT model as defined by atml.irt.
+
+        """
+
+        self.N_model = irt_mdl.N_model
+        self.N_dataset = irt_mdl.N_dataset
+        self.irt_type = irt_mdl.irt_type
+        self.N_test = None
+        self.logit_theta = tf.zeros(self.N_model, 'float32')
+        self.logit_delta = tf.zeros(self.N_dataset, 'float32')
+        self.log_a = tf.zeros(self.N_dataset, 'float32')
+        self.theta = tf.zeros(self.N_model, 'float32')
+        self.delta = tf.zeros(self.N_dataset, 'float32')
+        self.log_s2 = tf.zeros(self.N_dataset, 'float32')
+
+        if self.irt_type == 'beta3':
+            self.logit_theta = tf.cast(irt_mdl.logit_theta, 'float32')
+            self.logit_delta = tf.cast(irt_mdl.logit_delta, 'float32')
+            self.log_a = tf.cast(irt_mdl.log_a, 'float32')
+        elif self.irt_type == 'logistic':
+            self.theta = tf.cast(irt_mdl.theta, 'float32')
+            self.delta = tf.cast(irt_mdl.delta, 'float32')
+            self.log_a = tf.cast(irt_mdl.log_a, 'float32')
+            self.log_s2 = tf.cast(irt_mdl.log_s2, 'float32')
+
+    def testing(self, mdl, measure,
+                data_dict, get_data,
+                item_info='fisher',
+                ability_0=None,
+                N_test=None, remove_tested=True,
+                sparse=False, cap_size=10000, tes_size=0.5):
+        """
+        Perform the adaptive testing and record the testing sequence.
+
+        Parameters
+        ----------
+        mdl: sklearn.predictor
+            An instance of the sklearn predictor.
+            The model should have a fit(x, y) method for training and predict_proba(x) for testing.
+
+        measure: atml.Measure
+            A evaluation measure selected from the atml.measure module.
+
+        data_dict: dict
+            A dictionary that defines the index and the reference name of all the datasets.
+            Example: data_dict = {0: 'iris', 1: 'digits', 2: 'wine'}
+
+        get_data: Callable
+            A function that takes the dataset index and returns the features (x), and target (y) for the specified
+            dataset.
+
+        item_info: string
+            The selected item information criterion. Options: (1) 'fisher', (2) 'kl', (3) 'random'.
+            'fisher': the Fisher item information.
+            'kl': the Kullback-Leibler item information.
+            'random': random Gaussian item information.
+
+        ability_0: float
+            Initial value for the ability parameter.
+
+        N_test: int
+            Number of tests to be performed.
+
+        remove_tested: boolean
+            Whether to remove tested dataset and no longer test with the same dataset.
+
+        sparse: boolean
+            To indicate whether to only use a subset of the dataset to perform the experiments.
+
+        cap_size: int
+            In the case sparse=True, cap_size specifies the maximum size of the dataset to run the experiments.
+
+        tes_size: float
+            The proportion of the dataset that is used as the testing set (validation set).
+
+        Returns
+        ----------
+
+        selected_dataset_index: numpy.ndarray
+            The index sequence of selected datasets during the adaptive testing.
+
+        selected_dataset: list
+            The reference name sequence of selected dataset during the adaptive testing.
+
+        measurement: numpy.ndarray
+            The performance measurements of selected datasets during the adaptive testing.
+
+        ability_seq: numpy.ndarray
+            The estimated ability through the adaptive testing sequence.
+
+        """
 
         if N_test is None:
-            N_test = len(dataset_list)
-
-        test_measure = numpy.zeros([len(dataset_list), 10])
-
-        if test_all_measure is None:
-            test_all_measure = numpy.zeros([10, len(dataset_list), 6])
-            for i in range(0, 10):
-                for j in range(0, len(dataset_list)):
-                    test_all_measure[i, j, :] = get_random_split_measurement('test',
-                                                                             dataset_list[j],
-                                                                             test_size,
-                                                                             copy.deepcopy(mdl))
-
-        eps = 1e-6
-
-        for i in range(0, 10):
-            test_all_measure[i, :, 1] = (1 - (test_all_measure[i, :, 1] / 2))
-            test_all_measure[i, :, 2] = numpy.exp(- test_all_measure[i, :, 2])
-            test_measure[:, i] = test_all_measure[i, :, target_measure - 2]
-            test_measure[test_measure[:, i] <= eps, i] = eps
-            test_measure[test_measure[:, i] >= (1.0 - eps), i] = 1 - eps
-            
-        test_measure = tf.cast(test_measure, 'float32')
-
-        # if ability is None:
-        #     ability = tf.constant(0.0, dtype='float32')
-        # else:
-        #     ability = tf.cast(ability, 'float32')
-
-        if model_theta is None:
-            if self.irt_type == 'gp':
-                model_theta = tf.zeros(2, 'float32')
-            else:
-                model_theta = tf.zeros(1, 'float32')
+            self.N_test = self.N_dataset
         else:
-            model_theta = tf.cast(model_theta, 'float32')
+            self.N_test = N_test
+
+        if ability_0 is None:
+            if self.irt_type == 'beta3':
+                ability = tf.cast(numpy.median(self.logit_theta), 'float32')
+            elif self.irt_type == 'logistic':
+                ability = tf.cast(numpy.median(self.theta), 'float32')
+        else:
+            ability = tf.cast(ability_0, 'float32')
 
         selected_dataset = []
 
-        selected_dataset_index = []
+        selected_dataset_index = numpy.zeros(self.N_test)
 
-        selected_measure = []
+        measurements = numpy.zeros(self.N_test)
 
-        all_selected_dataset = list(range(0, len(dataset_list)))
+        ability_seq = numpy.zeros(self.N_test + 1)
 
-        mse = numpy.zeros([len(dataset_list) + 1])
+        if self.irt_type == 'beta3':
+            ability_seq[0] = 1 / (1 + numpy.exp(ability.numpy()))
+        else:
+            ability_seq[0] = ability.numpy().copy()
 
-        nll = numpy.zeros([len(dataset_list) + 1])
-
-        for j in range(0, 10):
-            if self.irt_type == 'logistic':
-                mse[0] = mse[0] + tf.reduce_mean(tf.math.square(test_measure[:, j] -
-                                                                m_logistic_irt(model_theta,
-                                                                               self.delta,
-                                                                               self.log_a,
-                                                                               self.log_s2)))
-                nll[0] = nll[0] + ml_logistic_obj(model_theta, self.delta, self.log_a,
-                                                  self.log_s2, test_measure[:, j],
-                                                  all_selected_dataset)
-            elif self.irt_type == 'beta3':
-                mse[0] = mse[0] + tf.reduce_mean(tf.math.square(test_measure[:, j] -
-                                                                m_beta_3_irt(model_theta,
-                                                                             self.logit_delta,
-                                                                             self.log_a)))
-                nll[0] = nll[0] + ml_beta_3_obj(model_theta, self.logit_delta, self.log_a,
-                                                test_measure[:, j], all_selected_dataset)
-            elif self.irt_type == 'gp':
-                mse[0] = mse[0] + tf.reduce_mean(tf.math.square(test_measure[:, j] -
-                                                                m_gp_irt(model_theta,
-                                                                         self.mu_alpha,
-                                                                         self.L_alpha,
-                                                                         self.dataset_log_s2,
-                                                                         self.e_0,
-                                                                         len(dataset_list),
-                                                                         self.N_approx)))
-                nll[0] = nll[0] + ml_beta_3_obj(ability, self.logit_delta, self.log_a,
-                                                test_measure[:, j], all_selected_dataset)
-
-        for i in range(1, N_test+1):
+        for i in range(1, self.N_test+1):
 
             print('======================================')
 
-            print('Test No.' + str(i) + ', mdl: ' + str(mdl) +  ', measure: ' + str(target_measure) + ', info: ' + item_info + ', irt: ' + self.irt_type)
+            print('Test No.' + str(i) + ', mdl: ' + str(mdl) + ', measure: ' + str(measure) + ', info: ' + item_info +
+                  ', irt: ' + self.irt_type)
 
             if item_info == 'fisher':
 
@@ -163,30 +173,25 @@ class Standard_CAT:
                 
             elif item_info == 'random':
                 
-                v = numpy.random.randn(len(dataset_list))
+                v = numpy.random.randn(self.N_dataset)
 
             print('Max Info:' + str(numpy.max(v)))
 
             print('Min Info:' + str(numpy.min(v)))
 
             if remove_tested:
-                if len(selected_dataset_index) > 0:
-                    v[numpy.array(selected_dataset_index)] = - numpy.inf
+                v[selected_dataset_index[:i].astype('int')] = - numpy.inf
 
             max_idx = numpy.argmax(v)
 
-            selected_dataset_index.append(max_idx)
+            selected_dataset_index[i-1] = max_idx
             
             tmp_mdl = copy.deepcopy(mdl)
 
-            tmp_measure = numpy.array(get_random_split_measurement(model='test', dataset=dataset_list[max_idx], 
-                                                                   test_size=test_size, model_instance=tmp_mdl))
+            tmp_measure = get_single_testing(max_idx, tmp_mdl, data_dict, get_data, measure,
+                                             sparse, cap_size, tes_size)
 
-            tmp_measure[1] = (1 - (tmp_measure[1] / 2))
-
-            tmp_measure[2] = numpy.exp(- tmp_measure[2])
-
-            tmp_measure = tmp_measure[target_measure - 2]
+            tmp_measure = measure.transform(tmp_measure)
 
             if tmp_measure >= (1 - eps):
                 tmp_measure = 1 - eps
@@ -194,52 +199,79 @@ class Standard_CAT:
             if tmp_measure <= eps:
                 tmp_measure = eps
 
-            selected_measure.append(tmp_measure)
-            
-            print('selected dataset: ' + dataset_list[max_idx])
+            measurements[i-1] = tmp_measure
 
-            selected_dataset.append(dataset_list[max_idx])
+            print('selected dataset: ' + data_dict[max_idx])
+
+            selected_dataset.append(data_dict[max_idx])
 
             print('test result is: ' + str(tmp_measure))
 
             ability = tf.reshape(tf.cast(ability, 'float32'), [-1, 1])
             
-            data = numpy.hstack([numpy.array(selected_dataset_index).reshape(-1, 1), 
-                                 numpy.array(selected_measure).reshape(-1, 1)])
-            
+            data = numpy.hstack([numpy.array(selected_dataset_index[:i]).reshape(-1, 1),
+                                 numpy.array(measurements[:i]).reshape(-1, 1)])
+
             extra_args = (self.irt_type, self.logit_delta, self.delta, self.log_a, self.log_s2)
             
             ability = parameter_update(theta_0=tf.Variable(ability), data=data, extra_args=extra_args,
                                        obj=get_obj, obj_g=get_obj_g,
                                        lr=1e-3,
-                                       batch_size=1, val_size=len(selected_dataset), factr=1e-16, tol=len(selected_measure) * 8,
+                                       batch_size=1, val_size=len(selected_dataset), factr=1e-16,
+                                       tol=1024,
                                        max_batch=int(1e8),
                                        plot_loss=False, print_info=False, 
                                        plot_final_loss=False, print_iteration=False).numpy()
 
-            print('current estimated ability is:' + str(ability))
+            if self.irt_type == 'beta3':
+                ability_seq[i] = 1 / (1 + numpy.exp(ability))
+            else:
+                ability_seq[i] = ability.copy()
 
-            for j in range(0, 10):
-                if self.irt_type == 'logistic':
-                    mse[i] = mse[i] + tf.reduce_mean(tf.math.square(test_measure[:, j] -
-                                                                    m_logistic_irt(ability,
-                                                                                   self.delta, self.log_a, self.log_s2)))
-                    nll[i] = nll[i] + ml_logistic_obj(ability, self.delta, self.log_a, self.log_s2,
-                                                      test_measure[:, j], all_selected_dataset)
-                elif self.irt_type == 'beta3':
-                    mse[i] = mse[i] + tf.reduce_mean(tf.math.square(test_measure[:, j] -
-                                                                    m_beta_3_irt(ability, self.logit_delta,
-                                                                                 self.log_a)))
-                    nll[i] = nll[i] + ml_beta_3_obj(ability, self.logit_delta, self.log_a,
-                                                    test_measure[:, j], all_selected_dataset)
+            print('current estimated ability is:' + str(ability_seq[i]))
 
-        return selected_dataset_index, mse * 0.1, nll * 0.1
+        return selected_dataset_index, selected_dataset, measurements, ability_seq
 
 
 def get_kl_item_information(ability, logit_delta, delta, log_a, log_s2, d_ability=1e-1, irt_type='beta3',
                             n_sample=65536):
+    """
+    Compute the KL item information for adaptive testing.
 
-    n_dataset = len(dataset_list)
+    Parameters
+    ----------
+    ability: float
+        The current estimated ability for the candidate model.
+
+    logit_delta: numpy.ndarray
+        The logit of the delta parameter of the IRT model.
+
+    delta: numpy.ndarray
+        The delta parameter of the IRT model.
+
+    log_a: numpy.ndarray
+        The log_a parameter of the IRT model.
+
+    log_s2: numpy.ndarray
+        The log_s2 parameter of the IRT model.
+
+    d_ability: float
+        The change of the ability parameter when calculating the KL item information.
+
+    irt_type: string
+        The type of the IRT model.
+
+    n_sample: integer
+        The number of random samples used when calculating the KL item information.
+
+    Returns
+    ----------
+    info: numpy.ndarray
+        The KL item information for all the datasets with the given ability.
+
+    """
+
+    n_dataset = len(log_a)
 
     a = numpy.exp(log_a)
 
@@ -251,9 +283,11 @@ def get_kl_item_information(ability, logit_delta, delta, log_a, log_s2, d_abilit
         delta = tf.clip_by_value(1 / (1 + tf.math.exp(logit_delta)), tf.constant(1e-6, dtype='float32'),
                                  tf.constant(1 - 1e-6, dtype='float32'))
 
-        alpha = numpy.repeat((tf.math.pow(theta / delta, a) + tf.constant(1e-6, dtype='float32')).numpy().reshape(1, -1), n_sample, axis=0)
+        alpha = numpy.repeat((tf.math.pow(theta / delta, a) +
+                              tf.constant(1e-6, dtype='float32')).numpy().reshape(1, -1), n_sample, axis=0)
 
-        beta = numpy.repeat((tf.math.pow((1 - theta) / (1 - delta), a) + tf.constant(1e-6, dtype='float32')).numpy().reshape(1, -1), n_sample, axis=0)
+        beta = numpy.repeat((tf.math.pow((1 - theta) / (1 - delta), a) +
+                             tf.constant(1e-6, dtype='float32')).numpy().reshape(1, -1), n_sample, axis=0)
 
         measure_sample = scipy.stats.beta.rvs(a=alpha, b=beta, size=[n_sample, n_dataset])
 
@@ -269,8 +303,6 @@ def get_kl_item_information(ability, logit_delta, delta, log_a, log_s2, d_abilit
 
         measure_sample = 1 / (1 + numpy.exp(logit_measure_sample))
 
-    eps = 1e-6
-
     measure_sample[measure_sample >= (1.0 - eps)] = 1.0 - eps
 
     measure_sample[measure_sample <= eps] = eps
@@ -283,7 +315,7 @@ def get_kl_item_information(ability, logit_delta, delta, log_a, log_s2, d_abilit
 
     sample_ability_n = tf.convert_to_tensor(numpy.repeat(ability - d_ability, n_sample * n_dataset), 'float32')
 
-    all_selected_dataset = list(range(0, len(dataset_list))) * n_sample
+    all_selected_dataset = list(range(0, len(log_a))) * n_sample
 
     if irt_type == 'beta3':
         L = ml_beta_3_obj(sample_ability, logit_delta, log_a,
@@ -300,16 +332,50 @@ def get_kl_item_information(ability, logit_delta, delta, log_a, log_s2, d_abilit
         L_n = ml_logistic_obj(sample_ability_n, delta, log_a, log_s2,
                               measure_sample, all_selected_dataset, True).numpy().reshape(n_sample, n_dataset)
 
-    return (numpy.mean(L_p, axis=0) - numpy.mean(L, axis=0)) + (numpy.mean(L_n, axis=0) - numpy.mean(L, axis=0))
+    info = (numpy.mean(L_p, axis=0) - numpy.mean(L, axis=0)) + (numpy.mean(L_n, axis=0) - numpy.mean(L, axis=0))
+
+    return info
 
 
 def get_fisher_item_information(ability, logit_delta, delta, log_a, log_s2, irt_type='beta3', n_sample=65536):
+    """
+    Compute the Fisher item information for adaptive testing.
 
-    n_dataset = len(dataset_list)
+    Parameters
+    ----------
+    ability: float
+        The current estimated ability for the candidate model.
+
+    logit_delta: numpy.ndarray
+        The logit of the delta parameter of the IRT model.
+
+    delta: numpy.ndarray
+        The delta parameter of the IRT model.
+
+    log_a: numpy.ndarray
+        The log_a parameter of the IRT model.
+
+    log_s2: numpy.ndarray
+        The log_s2 parameter of the IRT model.
+
+    irt_type: string
+        The type of the IRT model.
+
+    n_sample: integer
+        The number of random samples used when calculating the KL item information.
+
+    Returns
+    ----------
+    info: numpy.ndarray
+        The Fisher item information for all the datasets with the given ability.
+
+    """
+
+    n_dataset = len(log_a)
 
     measure_sample = numpy.zeros([n_sample, n_dataset])
 
-    all_selected_dataset = list(range(0, len(dataset_list))) * n_sample
+    all_selected_dataset = list(range(0, len(log_a))) * n_sample
 
     a = numpy.exp(log_a)
 
@@ -339,8 +405,6 @@ def get_fisher_item_information(ability, logit_delta, delta, log_a, log_s2, irt_
 
         measure_sample = 1 / (1 + numpy.exp(logit_measure_sample))
 
-    eps = 1e-6
-
     measure_sample[measure_sample >= (1.0 - eps)] = 1.0 - eps
 
     measure_sample[measure_sample <= eps] = eps
@@ -360,63 +424,32 @@ def get_fisher_item_information(ability, logit_delta, delta, log_a, log_s2, irt_
 
         g = gt.gradient(L, sample_ability).numpy().reshape(n_sample, n_dataset)
 
-    return numpy.mean(numpy.square(g), axis=0)
+    info = numpy.mean(numpy.square(g), axis=0)
 
-
-def m_gp_irt(logit_theta, mu_alpha, L_alpha,
-             dataset_log_s2, e_0,
-             N_data, N_approx, N_sample=4096):
-
-    eps = tf.constant(1e-6, 'float32')
-
-    logit_theta = tf.cast(logit_theta, 'float32') * tf.ones(N_data, 'float32')
-
-    mu_alpha = tf.reshape(tf.cast(mu_alpha, 'float32'), [N_data, N_approx])
-
-    L_alpha = tf.reshape(tf.cast(L_alpha, 'float32'), [N_data, N_approx, N_approx])
-
-    dataset_log_s2 = tf.cast(dataset_log_s2, 'float32')
-
-    dataset_s2 = tf.square(tf.exp(dataset_log_s2))
-
-    model_log_s2 = tf.cast(model_log_s2, 'float32')
-
-    model_s2 = tf.square(tf.exp(model_log_s2))
-
-    s2 = dataset_s2 + model_s2
-
-    e_0 = tf.cast(e_0, 'float32')
-
-    j_index, i_index = numpy.meshgrid(numpy.arange(0, N_approx) + 1, numpy.arange(0, N_approx) + 1)
-
-    theta = tf.clip_by_value(1 / (1 + tf.math.exp(logit_theta)),
-                             tf.constant(eps, dtype='float32'),
-                             tf.constant(1 - eps, dtype='float32')) - 0.5
-
-    psi_mat = psi(tf.reshape(theta, [-1, 1, 1]),
-                  tf.constant(i_index.reshape(1, N_approx, N_approx), dtype='float32'),
-                  tf.constant(j_index.reshape(1, N_approx, N_approx), dtype='float32'))
-
-    raw_alpha_samples = tf.random.normal([N_data, N_sample, N_approx], dtype='float32')
-
-    alpha_samples = tf.matmul(raw_alpha_samples, L_alpha) + tf.reshape(mu_alpha, [-1, 1, N_approx])
-
-    e_samples = tf.reduce_mean(tf.matmul(alpha_samples, psi_mat) * alpha_samples, axis=1) + tf.reshape(e_0, [-1, 1])
-
-    mu = numpy.mean(e_samples.numpy(), axis=1)
-
-    var_e = numpy.var(e_samples.numpy(), axis=1)
-
-    s2_hat = s2.numpy().ravel() + var_e.ravel()
-
-    s_hat = numpy.sqrt(s2_hat)
-
-    E = 1 - 1 / (1 + numpy.exp((mu / numpy.sqrt(1 + numpy.pi * numpy.square(s_hat) / 8))))
-
-    return E
+    return info
 
 
 def m_beta_3_irt(logit_theta, logit_delta, log_a):
+    """
+    Predict the expected response for a set of IRT parameters
+
+    Parameters
+    ----------
+    logit_theta: numpy.ndarray
+        The logit_theta parameter of the Beta-3 IRT model.
+
+    logit_delta: numpy.ndarray
+        The logit_delta parameter of the Beta-3 IRT model.
+
+    log_a: numpy.ndarray
+        The log_a parameter of the Beta-3 IRT model.
+
+    Returns
+    ----------
+    E: numpy.ndarray
+        The expected performance measurement.
+
+    """
 
     a = tf.math.exp(log_a)
 
@@ -432,10 +465,35 @@ def m_beta_3_irt(logit_theta, logit_delta, log_a):
 
     beta = tf.math.pow((1 - theta) / (1 - delta), a) + tf.constant(1e-6, dtype='float32')
 
-    return alpha / (alpha + beta)
+    E = alpha / (alpha + beta)
+
+    return E
 
 
 def m_logistic_irt(theta, delta, log_a, log_s2):
+    """
+    Predict the expected response for a set of IRT parameters
+
+    Parameters
+    ----------
+    theta: numpy.ndarray
+        The theta parameter of the Logistic IRT model.
+
+    delta: numpy.ndarray
+        The delta parameter of the Logistic IRT model.
+
+    log_a: numpy.ndarray
+        The log_a parameter of the Logistic IRT model.
+
+    log_s2: numpy.ndarray
+        The log_s2 parameter of the Logistic IRT model.
+
+    Returns
+    ----------
+    E: numpy.ndarray
+        The expected performance measurement.
+
+    """
 
     a = numpy.exp(log_a)
     
@@ -445,78 +503,46 @@ def m_logistic_irt(theta, delta, log_a, log_s2):
 
     mu = - a * (theta - delta)
 
-    samples = scipy.stats.norm.rvs(loc=mu, scale=s, size=[65536, len(dataset_list)])
+    samples = scipy.stats.norm.rvs(loc=mu, scale=s, size=[65536, len(log_a)])
 
-    return numpy.mean(1 / (1 + numpy.exp(samples)), axis=0)
+    E = numpy.mean(1 / (1 + numpy.exp(samples)), axis=0)
 
-
-def ml_gp_obj(logit_theta, log_s2,
-              mu_alpha, L_alpha,
-              dataset_log_s2, e_0,
-              measure, tested_list,
-              N_data, N_flow, N_approx, N_sample,
-              using_samples=False):
-
-    eps = tf.constant(1e-6, 'float32')
-
-    pi = tf.constant(numpy.pi, 'float32')
-
-    logit_theta = tf.cast(logit_theta, 'float32') * tf.ones(len(tested_list), 'float32')
-
-    mu_alpha = tf.gather(tf.reshape(tf.cast(mu_alpha, 'float32'), [N_data, N_approx]), tested_list, axis=0)
-
-    L_alpha = tf.gather(tf.reshape(tf.cast(L_alpha, 'float32'), [N_data, N_approx, N_approx]), tested_list, axis=0)
-
-    dataset_log_s2 = tf.gather(tf.cast(dataset_log_s2, 'float32'), tested_list, axis=0)
-
-    dataset_s2 = tf.square(tf.exp(dataset_log_s2))
-
-    model_log_s2 = tf.cast(log_s2, 'float32') * tf.ones(len(tested_list), 'float32')
-
-    model_s2 = tf.square(tf.exp(model_log_s2))
-
-    s2 = dataset_s2 + model_s2
-
-    e_0 = tf.gather(tf.cast(e_0, 'float32'), tested_list, axis=0)
-
-    j_index, i_index = numpy.meshgrid(numpy.arange(0, N_approx) + 1, numpy.arange(0, N_approx) + 1)
-
-    theta = tf.clip_by_value(1 / (1 + tf.math.exp(logit_theta)),
-                             tf.constant(eps, dtype='float32'),
-                             tf.constant(1 - eps, dtype='float32')) - 0.5
-
-    psi_mat = psi(tf.reshape(theta, [-1, 1, 1]),
-                  tf.constant(i_index.reshape(1, N_approx, N_approx), dtype='float32'),
-                  tf.constant(j_index.reshape(1, N_approx, N_approx), dtype='float32'))
-
-    raw_alpha_samples = tf.random.normal([len(tested_list), N_sample, N_approx], dtype='float32')
-
-    logit_measure = tf.math.log(measure / (1 - measure))
-
-    alpha_samples = tf.matmul(raw_alpha_samples, L_alpha) + tf.reshape(mu_alpha, [-1, 1, N_approx])
-
-    e_samples = tf.reduce_mean(tf.matmul(alpha_samples, psi_mat) * alpha_samples, axis=2) + tf.reshape(e_0, [-1, 1])
-
-    diff = logit_measure - e_samples
-
-    exp = tf.math.exp(- 0.5 * tf.math.square(diff) / s2)
-
-    sample_lik = 1 / (tf.math.sqrt(2 * pi * s2)) * exp * (1 / (tf.reshape(measure, [-1, 1]) *
-                                                               (1 - tf.reshape(measure, [-1, 1]))))
-
-    link_log_lik = tf.math.log(tf.reduce_mean(sample_lik + tf.constant(1e-16, dtype='float32'), axis=1))
-
-    if using_samples:
-        res = - link_log_lik
-    else:
-        res = - tf.reduce_mean(link_log_lik)
-
-    return res
+    return E
 
 
 def ml_logistic_obj(theta, delta, log_a, log_s2, measure, tested_list, using_samples=False):
+    """
+    The log-likelihood objective function of the Logistic IRT model
 
-    pi = tf.constant(numpy.pi, dtype='float32')
+    Parameters
+    ----------
+    theta: tensorflow.Variable
+        The current ability parameter of the IRT model.
+
+    delta: tf.Tensor
+        The current delta parameter of the IRT model.
+
+    log_a: tf.Tensor
+        The current log_a parameter of the IRT model.
+
+    log_s2: tf.Tensor
+        The current log_s2 parameter of the IRT model.
+
+    measure: tf.Tensor
+        The performance measurements for the selected datasets.
+
+    tested_list: tf.Tensor
+        The index of each selected dataset.
+
+    using_samples: boolean
+        Whether to return the sample-wise negative log-likelihood.
+
+    Returns
+    ----------
+    nll: tf.Tensor
+        The negative log-likelihood of the IRT model.
+
+    """
 
     delta = tf.gather(delta, tested_list, axis=0)
 
@@ -553,6 +579,35 @@ def ml_logistic_obj(theta, delta, log_a, log_s2, measure, tested_list, using_sam
 
 
 def ml_beta_3_obj(logit_theta, logit_delta, log_a, measure, tested_list, using_samples=False):
+    """
+    The log-likelihood objective function of the Logistic IRT model
+
+    Parameters
+    ----------
+    logit_theta: tensorflow.Variable
+        The current ability parameter of the IRT model.
+
+    logit_delta: tf.Tensor
+        The current logit_delta parameter of the IRT model.
+
+    log_a: tf.Tensor
+        The current log_a parameter of the IRT model.
+
+    measure: tf.Tensor
+        The performance measurements for the selected datasets.
+
+    tested_list: tf.Tensor
+        The index of each selected dataset.
+
+    using_samples: boolean
+        Whether to return the sample-wise negative log-likelihood.
+
+    Returns
+    ----------
+    nll: tf.Tensor
+        The negative log-likelihood of the IRT model.
+
+    """
 
     logit_delta = tf.gather(logit_delta, tested_list, axis=0)
 
@@ -582,6 +637,27 @@ def ml_beta_3_obj(logit_theta, logit_delta, log_a, measure, tested_list, using_s
 
 
 def get_obj(parameter, data, extra_args):
+    """
+    Wrapper function to get the value of the objective function.
+
+    Parameters
+    ----------
+    parameter: tensorflow.Variable
+        The parameter of the IRT model.
+
+    data: tensorflow.Tensor
+        A tensor contains the selected dataset index, and performance measure of each experiment.
+
+    extra_args: tuple
+        A tuple contains extra parameters of the IRT model.
+        (irt type, logit_delta, delta, log_a, log_2)
+
+    Returns
+    ----------
+    L: tensorflow.Tensor
+        The negative log-likelihood.
+
+    """
     
     tested_list = tf.cast(data[:, 0], 'int32')
     
@@ -606,6 +682,30 @@ def get_obj(parameter, data, extra_args):
 
 
 def get_obj_g(parameter, data, extra_args):
+    """
+    Wrapper function to get the gradient of the objective function.
+
+    Parameters
+    ----------
+    parameter: tensorflow.Variable
+        The parameter of the IRT model.
+
+    data: tensorflow.Tensor
+        A tensor contains the selected dataset index, and performance measure of each experiment.
+
+    extra_args: tuple
+        A tuple contains extra parameters of the IRT model.
+        (irt type, logit_delta, delta, log_a, log_2)
+
+    Returns
+    ----------
+    L: tensorflow.Tensor
+        The negative log-likelihood.
+
+    g: tensorflow.Tensor
+        The gradient of the parameters.
+
+    """
     
     with tf.GradientTape() as gt:
         
