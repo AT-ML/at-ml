@@ -3,6 +3,12 @@
 Introduction
 ------------
 
+|             | Method 1    | Method 2   | Method 3   | ...        | New Method |
+| ----------- | ----------- | ---------- | ---------- | ---------- | ---------- |
+| Dataset 1   | xxx         | xxx        | xxx        | ...        | ???        |
+| Dataset 2   | xxx         | xxx        | xxx        | ...        | ???        |
+| Dataset 3   | xxx         | xxx        | xxx        | ...        | ???        |
+| ...         | ...         | ...        | ...        | ...        | ...        |
 
 User installation
 -----------------
