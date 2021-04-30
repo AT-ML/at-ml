@@ -28,6 +28,7 @@ Citation
 
 If you use @ML in a scientific publication, it would be great if you can cite the following paper:
 
+```
 @article{song2021efficient,
   title={Efficient and Robust Model Benchmarks with Item Response Theory and Adaptive Testing.},
   author={Song, Hao and Flach, Peter},
@@ -36,6 +37,7 @@ If you use @ML in a scientific publication, it would be great if you can cite th
   number={5},
   year={2021}
 }
+```
 
 Acknowledgements
 ----------------
