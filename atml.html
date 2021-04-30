@@ -1,0 +1,351 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>atml package &#8212; @ML 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="atml" href="modules.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="atml-package">
+<h1>atml package<a class="headerlink" href="#atml-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="atml-cat-module">
+<h2>atml.cat module<a class="headerlink" href="#atml-cat-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-atml.exp">
+<span id="atml-exp-module"></span><h2>atml.exp module<a class="headerlink" href="#module-atml.exp" title="Permalink to this headline">¶</a></h2>
+<p>The :mod:’atml.exp’ module holds a set of functions to perform machine learning experiments and gather the corresponding
+performances metrics.</p>
+<dl class="function">
+<dt id="atml.exp.get_exhaustive_testing">
+<code class="descclassname">atml.exp.</code><code class="descname">get_exhaustive_testing</code><span class="sig-paren">(</span><em>data_dict</em>, <em>get_data</em>, <em>model_dict</em>, <em>get_model</em>, <em>measure</em>, <em>sparse=False</em>, <em>cap_size=10000</em>, <em>test_size=0.5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/exp.html#get_exhaustive_testing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.exp.get_exhaustive_testing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform testing experiments on all the possible combinations between different models and datasets.</p>
+<dl class="docutils">
+<dt>data_dict: dict</dt>
+<dd>A dictionary that defines the index and the reference name of all the datasets.
+Example: data_dict = {0: ‘iris’, 1: ‘digits’, 2: ‘wine’}</dd>
+<dt>get_data: Callable</dt>
+<dd>A function that takes the dataset index and returns the features (x), and target (y) for the specified dataset.</dd>
+<dt>model_dict: dict</dt>
+<dd>A dictionary that defines the index and the reference name of all the models.
+Example: model_dict = {0: ‘logistic regression’, 1: ‘random forest’, 2: ‘naive bayes’}</dd>
+<dt>get_model: Callable</dt>
+<dd>A function that takes the model index and returns the instance from a model class with a sklearn template.
+The model should have a fit(x, y) method for training and predict_proba(x) for testing.</dd>
+<dt>measure: atml.Measure</dt>
+<dd>A evaluation measure selected from the atml.measure module.</dd>
+<dt>sparse: boolean</dt>
+<dd>To indicate whether to only use a subset of the dataset to perform the experiments.</dd>
+<dt>cap_size: integer</dt>
+<dd>In the case sparse=True, cap_size specifies the maximum size of the dataset to run the experiments.</dd>
+<dt>test_size: float</dt>
+<dd>The proportion of the dataset that is used as the testing set (validation set).</dd>
+</dl>
+<dl class="docutils">
+<dt>res: pandas.DataFrame</dt>
+<dd>A table that contains the</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.exp.get_openml_testing">
+<code class="descclassname">atml.exp.</code><code class="descname">get_openml_testing</code><span class="sig-paren">(</span><em>openml_dict</em>, <em>flow_dict</em>, <em>measure</em>, <em>max_n_exp=10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/exp.html#get_openml_testing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.exp.get_openml_testing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gather machine learning experiment results from OpenML</p>
+<dl class="docutils">
+<dt>openml_dict: dict</dt>
+<dd>A dictionary that defines the (1) user defined dataset index, (2) name of the dataset, (3) OpenML defined
+dataset ID, (3) OpenML defined task ID. Example: {0, (‘adult’, 1590, 7592)}</dd>
+<dt>flow_dict: dict</dt>
+<dd>A dictionary that define the (1) OpenMl defined flow (model) ID, (2) user defined flow (model) index.
+Example: {1172: 0}</dd>
+<dt>measure: str</dt>
+<dd>The selected evaluation measure as defined by OpenML. Example: ‘predictive_accuracy’
+See: <a class="reference external" href="https://www.openml.org/search?type=measure">https://www.openml.org/search?type=measure</a></dd>
+<dt>max_n_exp: int</dt>
+<dd>The maximum number of results collected for each dataset and task combination.</dd>
+</dl>
+<dl class="docutils">
+<dt>res: pandas.DataFrame</dt>
+<dd>A table that contains the collected experiment results.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.exp.get_random_split_measurement">
+<code class="descclassname">atml.exp.</code><code class="descname">get_random_split_measurement</code><span class="sig-paren">(</span><em>model_instance</em>, <em>x</em>, <em>y</em>, <em>measure</em>, <em>sparse=False</em>, <em>cap_size=10000</em>, <em>test_size=0.5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/exp.html#get_random_split_measurement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.exp.get_random_split_measurement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a random split validation experiment for a given combination of model, dataset, and evaluation measure.</p>
+<dl class="docutils">
+<dt>model_instance: sklearn.predictor</dt>
+<dd>A model instance with the sklearn.predictor template, it should have a fit() method for model training, and
+a predict_proba() method to predict probability vectors on test data.</dd>
+<dt>x: numpy.ndarray</dt>
+<dd>The data matrix with shape (n samples, d dimensions)</dd>
+<dt>y: numpy.ndarray</dt>
+<dd>The label vector with shape (n samples, 1)</dd>
+<dt>measure: atml.Measure</dt>
+<dd>A evaluation measure selected from the atml.measure module.</dd>
+<dt>sparse: boolean</dt>
+<dd>To indicate whether to only use a subset of the dataset to perform the experiments.</dd>
+<dt>cap_size: integer</dt>
+<dd>In the case sparse=True, cap_size specifies the maximum size of the dataset to run the experiments.</dd>
+<dt>test_size: float</dt>
+<dd>The proportion of the dataset that is used as the testing set (validation set).</dd>
+</dl>
+<dl class="docutils">
+<dt>measurement: float</dt>
+<dd>The performance measurement on the testing set (validation set).</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.exp.get_single_testing">
+<code class="descclassname">atml.exp.</code><code class="descname">get_single_testing</code><span class="sig-paren">(</span><em>data_idx</em>, <em>mdl</em>, <em>data_dict</em>, <em>get_data</em>, <em>measure</em>, <em>sparse=False</em>, <em>cap_size=10000</em>, <em>test_size=0.5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/exp.html#get_single_testing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.exp.get_single_testing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a single testing experiment on a specified dataset with the given model.</p>
+<dl class="docutils">
+<dt>data_idx: int</dt>
+<dd>The index of the selected dataset, as defined with data_dict.</dd>
+<dt>mdl: sklearn.predictor</dt>
+<dd>An instance of the sklearn predictor.
+The model should have a fit(x, y) method for training and predict_proba(x) for testing.</dd>
+<dt>data_dict: dict</dt>
+<dd>A dictionary that defines the index and the reference name of all the datasets.
+Example: data_dict = {0: ‘iris’, 1: ‘digits’, 2: ‘wine’}</dd>
+<dt>get_data: Callable</dt>
+<dd>A function that takes the dataset index and returns the features (x), and target (y) for the specified dataset.</dd>
+<dt>measure: atml.Measure</dt>
+<dd>A evaluation measure selected from the atml.measure module.</dd>
+<dt>sparse: boolean</dt>
+<dd>To indicate whether to only use a subset of the dataset to perform the experiments.</dd>
+<dt>cap_size: int</dt>
+<dd>In the case sparse=True, cap_size specifies the maximum size of the dataset to run the experiments.</dd>
+<dt>test_size: float</dt>
+<dd>The proportion of the dataset that is used as the testing set (validation set).</dd>
+</dl>
+<blockquote>
+<div><dl class="docutils">
+<dt>tmp_m: float</dt>
+<dd>The performance measurement on the testing set (validation set).</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="atml-irt-module">
+<h2>atml.irt module<a class="headerlink" href="#atml-irt-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-atml.measure">
+<span id="atml-measure-module"></span><h2>atml.measure module<a class="headerlink" href="#module-atml.measure" title="Permalink to this headline">¶</a></h2>
+<p>The :mod:’atml.measure’ module contains a set of common evaluation measures for predictive machine learning tasks.</p>
+<dl class="class">
+<dt id="atml.measure.AUC">
+<em class="property">class </em><code class="descclassname">atml.measure.</code><code class="descname">AUC</code><span class="sig-paren">(</span><em>target_positive=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/measure.html#AUC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.AUC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#atml.measure.Measure" title="atml.measure.Measure"><code class="xref py py-class docutils literal notranslate"><span class="pre">atml.measure.Measure</span></code></a></p>
+<p>Area under the ROC curve</p>
+<dl class="method">
+<dt id="atml.measure.AUC.get_measure">
+<code class="descname">get_measure</code><span class="sig-paren">(</span><em>s</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/measure.html#AUC.get_measure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.AUC.get_measure" title="Permalink to this definition">¶</a></dt>
+<dd><p>s: numpy.ndarray</p>
+<p>y: numpy.ndarray</p>
+<p>auc: float</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="atml.measure.AUC.transform">
+<em class="property">static </em><code class="descname">transform</code><span class="sig-paren">(</span><em>m</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/measure.html#AUC.transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.AUC.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>m: float</p>
+<p>m_hat: float</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="atml.measure.Acc">
+<em class="property">class </em><code class="descclassname">atml.measure.</code><code class="descname">Acc</code><a class="reference internal" href="_modules/atml/measure.html#Acc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.Acc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#atml.measure.Measure" title="atml.measure.Measure"><code class="xref py py-class docutils literal notranslate"><span class="pre">atml.measure.Measure</span></code></a></p>
+<p>multi-class accuracy</p>
+<dl class="staticmethod">
+<dt id="atml.measure.Acc.get_measure">
+<em class="property">static </em><code class="descname">get_measure</code><span class="sig-paren">(</span><em>s</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/measure.html#Acc.get_measure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.Acc.get_measure" title="Permalink to this definition">¶</a></dt>
+<dd><p>s: numpy.ndarray</p>
+<p>y: numpy.ndarray</p>
+<p>acc: float</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="atml.measure.BAcc">
+<em class="property">class </em><code class="descclassname">atml.measure.</code><code class="descname">BAcc</code><span class="sig-paren">(</span><em>target_positive=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/measure.html#BAcc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.BAcc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#atml.measure.Measure" title="atml.measure.Measure"><code class="xref py py-class docutils literal notranslate"><span class="pre">atml.measure.Measure</span></code></a></p>
+<p>Binary accuracy</p>
+<dl class="method">
+<dt id="atml.measure.BAcc.get_measure">
+<code class="descname">get_measure</code><span class="sig-paren">(</span><em>s</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/measure.html#BAcc.get_measure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.BAcc.get_measure" title="Permalink to this definition">¶</a></dt>
+<dd><p>s: numpy.ndarray</p>
+<p>y: numpy.ndarray</p>
+<p>bacc: float</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="atml.measure.BS">
+<em class="property">class </em><code class="descclassname">atml.measure.</code><code class="descname">BS</code><a class="reference internal" href="_modules/atml/measure.html#BS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.BS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#atml.measure.Measure" title="atml.measure.Measure"><code class="xref py py-class docutils literal notranslate"><span class="pre">atml.measure.Measure</span></code></a></p>
+<p>Brier score</p>
+<dl class="staticmethod">
+<dt id="atml.measure.BS.get_measure">
+<em class="property">static </em><code class="descname">get_measure</code><span class="sig-paren">(</span><em>s</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/measure.html#BS.get_measure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.BS.get_measure" title="Permalink to this definition">¶</a></dt>
+<dd><p>s: numpy.ndarray</p>
+<p>y: numpy.ndarray</p>
+<p>bs: float</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="atml.measure.BS.transform">
+<em class="property">static </em><code class="descname">transform</code><span class="sig-paren">(</span><em>m</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/measure.html#BS.transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.BS.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>m: float</p>
+<p>m_hat: float</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="atml.measure.F1">
+<em class="property">class </em><code class="descclassname">atml.measure.</code><code class="descname">F1</code><span class="sig-paren">(</span><em>target_positive=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/measure.html#F1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.F1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#atml.measure.Measure" title="atml.measure.Measure"><code class="xref py py-class docutils literal notranslate"><span class="pre">atml.measure.Measure</span></code></a></p>
+<p>F1 score</p>
+<dl class="method">
+<dt id="atml.measure.F1.get_measure">
+<code class="descname">get_measure</code><span class="sig-paren">(</span><em>s</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/measure.html#F1.get_measure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.F1.get_measure" title="Permalink to this definition">¶</a></dt>
+<dd><p>s: numpy.ndarray</p>
+<p>y: numpy.ndarray</p>
+<p>f1: float</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="atml.measure.LL">
+<em class="property">class </em><code class="descclassname">atml.measure.</code><code class="descname">LL</code><a class="reference internal" href="_modules/atml/measure.html#LL"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.LL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#atml.measure.Measure" title="atml.measure.Measure"><code class="xref py py-class docutils literal notranslate"><span class="pre">atml.measure.Measure</span></code></a></p>
+<p>Logarithm loss (cross entropy)</p>
+<dl class="staticmethod">
+<dt id="atml.measure.LL.get_measure">
+<em class="property">static </em><code class="descname">get_measure</code><span class="sig-paren">(</span><em>s</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/measure.html#LL.get_measure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.LL.get_measure" title="Permalink to this definition">¶</a></dt>
+<dd><p>s: numpy.ndarray</p>
+<p>y: numpy.ndarray</p>
+<p>ll: float</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="atml.measure.Measure">
+<em class="property">class </em><code class="descclassname">atml.measure.</code><code class="descname">Measure</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/measure.html#Measure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.measure.Measure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The base measure class, and specifies the corresponding task type for the measure. (e.g. classification)</p>
+</dd></dl>
+
+</div>
+<div class="section" id="atml-visualisation-module">
+<h2>atml.visualisation module<a class="headerlink" href="#atml-visualisation-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-atml">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-atml" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">@ML</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">atml</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">atml package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">atml</a><ul>
+      <li>Previous: <a href="modules.html" title="previous chapter">atml</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Hao Song.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="_sources/atml.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,54 @@
+atml package
+============
+
+Submodules
+----------
+
+atml.cat module
+---------------
+
+.. automodule:: atml.cat
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+atml.exp module
+---------------
+
+.. automodule:: atml.exp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+atml.irt module
+---------------
+
+.. automodule:: atml.irt
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+atml.measure module
+-------------------
+
+.. automodule:: atml.measure
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+atml.visualisation module
+-------------------------
+
+.. automodule:: atml.visualisation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: atml
+    :members:
+    :undoc-members:
+    :show-inheritance:
