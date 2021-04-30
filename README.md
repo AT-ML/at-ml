@@ -61,4 +61,4 @@ If you use @ML in a scientific publication, it would be great if you can cite th
 Acknowledgements
 ----------------
 
-This toolbox is delivered as a part of the project: Measurement theory for data science and AI, funded by the Alan Turing Insititute (https://www.turing.ac.uk/). 
+This toolbox is delivered as a part of the project: Measurement theory for data science and AI, funded by the Alan Turing Insititute (https://www.turing.ac.uk/research/research-projects/measurement-theory-data-science-and-ai). 
