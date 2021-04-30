@@ -35,8 +35,244 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="atml-cat-module">
-<h2>atml.cat module<a class="headerlink" href="#atml-cat-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-atml.cat">
+<span id="atml-cat-module"></span><h2>atml.cat module<a class="headerlink" href="#module-atml.cat" title="Permalink to this headline">¶</a></h2>
+<p>The :mod:’atml.cat’ module contains a set of functions to perform adaptive testing on predictive ML models.</p>
+<dl class="class">
+<dt id="atml.cat.Standard_CAT">
+<em class="property">class </em><code class="descclassname">atml.cat.</code><code class="descname">Standard_CAT</code><span class="sig-paren">(</span><em>irt_mdl</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/cat.html#Standard_CAT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.cat.Standard_CAT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The class for a standard adaptive testing on ML models</p>
+<dl class="method">
+<dt id="atml.cat.Standard_CAT.testing">
+<code class="descname">testing</code><span class="sig-paren">(</span><em>mdl</em>, <em>measure</em>, <em>data_dict</em>, <em>get_data</em>, <em>item_info='fisher'</em>, <em>ability_0=None</em>, <em>N_test=None</em>, <em>remove_tested=True</em>, <em>sparse=False</em>, <em>cap_size=10000</em>, <em>tes_size=0.5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/cat.html#Standard_CAT.testing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.cat.Standard_CAT.testing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the adaptive testing and record the testing sequence.</p>
+<dl class="docutils">
+<dt>mdl: sklearn.predictor</dt>
+<dd>An instance of the sklearn predictor.
+The model should have a fit(x, y) method for training and predict_proba(x) for testing.</dd>
+<dt>measure: atml.Measure</dt>
+<dd>A evaluation measure selected from the atml.measure module.</dd>
+<dt>data_dict: dict</dt>
+<dd>A dictionary that defines the index and the reference name of all the datasets.
+Example: data_dict = {0: ‘iris’, 1: ‘digits’, 2: ‘wine’}</dd>
+<dt>get_data: Callable</dt>
+<dd>A function that takes the dataset index and returns the features (x), and target (y) for the specified
+dataset.</dd>
+<dt>item_info: string</dt>
+<dd>The selected item information criterion. Options: (1) ‘fisher’, (2) ‘kl’, (3) ‘random’.
+‘fisher’: the Fisher item information.
+‘kl’: the Kullback-Leibler item information.
+‘random’: random Gaussian item information.</dd>
+<dt>ability_0: float</dt>
+<dd>Initial value for the ability parameter.</dd>
+<dt>N_test: int</dt>
+<dd>Number of tests to be performed.</dd>
+<dt>remove_tested: boolean</dt>
+<dd>Whether to remove tested dataset and no longer test with the same dataset.</dd>
+<dt>sparse: boolean</dt>
+<dd>To indicate whether to only use a subset of the dataset to perform the experiments.</dd>
+<dt>cap_size: int</dt>
+<dd>In the case sparse=True, cap_size specifies the maximum size of the dataset to run the experiments.</dd>
+<dt>tes_size: float</dt>
+<dd>The proportion of the dataset that is used as the testing set (validation set).</dd>
+</dl>
+<dl class="docutils">
+<dt>selected_dataset_index: numpy.ndarray</dt>
+<dd>The index sequence of selected datasets during the adaptive testing.</dd>
+<dt>selected_dataset: list</dt>
+<dd>The reference name sequence of selected dataset during the adaptive testing.</dd>
+<dt>measurement: numpy.ndarray</dt>
+<dd>The performance measurements of selected datasets during the adaptive testing.</dd>
+<dt>ability_seq: numpy.ndarray</dt>
+<dd>The estimated ability through the adaptive testing sequence.</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.cat.get_fisher_item_information">
+<code class="descclassname">atml.cat.</code><code class="descname">get_fisher_item_information</code><span class="sig-paren">(</span><em>ability</em>, <em>logit_delta</em>, <em>delta</em>, <em>log_a</em>, <em>log_s2</em>, <em>irt_type='beta3'</em>, <em>n_sample=65536</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/cat.html#get_fisher_item_information"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.cat.get_fisher_item_information" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the Fisher item information for adaptive testing.</p>
+<dl class="docutils">
+<dt>ability: float</dt>
+<dd>The current estimated ability for the candidate model.</dd>
+<dt>logit_delta: numpy.ndarray</dt>
+<dd>The logit of the delta parameter of the IRT model.</dd>
+<dt>delta: numpy.ndarray</dt>
+<dd>The delta parameter of the IRT model.</dd>
+<dt>log_a: numpy.ndarray</dt>
+<dd>The log_a parameter of the IRT model.</dd>
+<dt>log_s2: numpy.ndarray</dt>
+<dd>The log_s2 parameter of the IRT model.</dd>
+<dt>irt_type: string</dt>
+<dd>The type of the IRT model.</dd>
+<dt>n_sample: integer</dt>
+<dd>The number of random samples used when calculating the KL item information.</dd>
+</dl>
+<dl class="docutils">
+<dt>info: numpy.ndarray</dt>
+<dd>The Fisher item information for all the datasets with the given ability.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.cat.get_kl_item_information">
+<code class="descclassname">atml.cat.</code><code class="descname">get_kl_item_information</code><span class="sig-paren">(</span><em>ability</em>, <em>logit_delta</em>, <em>delta</em>, <em>log_a</em>, <em>log_s2</em>, <em>d_ability=0.1</em>, <em>irt_type='beta3'</em>, <em>n_sample=65536</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/cat.html#get_kl_item_information"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.cat.get_kl_item_information" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the KL item information for adaptive testing.</p>
+<dl class="docutils">
+<dt>ability: float</dt>
+<dd>The current estimated ability for the candidate model.</dd>
+<dt>logit_delta: numpy.ndarray</dt>
+<dd>The logit of the delta parameter of the IRT model.</dd>
+<dt>delta: numpy.ndarray</dt>
+<dd>The delta parameter of the IRT model.</dd>
+<dt>log_a: numpy.ndarray</dt>
+<dd>The log_a parameter of the IRT model.</dd>
+<dt>log_s2: numpy.ndarray</dt>
+<dd>The log_s2 parameter of the IRT model.</dd>
+<dt>d_ability: float</dt>
+<dd>The change of the ability parameter when calculating the KL item information.</dd>
+<dt>irt_type: string</dt>
+<dd>The type of the IRT model.</dd>
+<dt>n_sample: integer</dt>
+<dd>The number of random samples used when calculating the KL item information.</dd>
+</dl>
+<dl class="docutils">
+<dt>info: numpy.ndarray</dt>
+<dd>The KL item information for all the datasets with the given ability.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.cat.get_obj">
+<code class="descclassname">atml.cat.</code><code class="descname">get_obj</code><span class="sig-paren">(</span><em>parameter</em>, <em>data</em>, <em>extra_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/cat.html#get_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.cat.get_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper function to get the value of the objective function.</p>
+<dl class="docutils">
+<dt>parameter: tensorflow.Variable</dt>
+<dd>The parameter of the IRT model.</dd>
+<dt>data: tensorflow.Tensor</dt>
+<dd>A tensor contains the selected dataset index, and performance measure of each experiment.</dd>
+<dt>extra_args: tuple</dt>
+<dd>A tuple contains extra parameters of the IRT model.
+(irt type, logit_delta, delta, log_a, log_2)</dd>
+</dl>
+<dl class="docutils">
+<dt>L: tensorflow.Tensor</dt>
+<dd>The negative log-likelihood.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.cat.get_obj_g">
+<code class="descclassname">atml.cat.</code><code class="descname">get_obj_g</code><span class="sig-paren">(</span><em>parameter</em>, <em>data</em>, <em>extra_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/cat.html#get_obj_g"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.cat.get_obj_g" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper function to get the gradient of the objective function.</p>
+<dl class="docutils">
+<dt>parameter: tensorflow.Variable</dt>
+<dd>The parameter of the IRT model.</dd>
+<dt>data: tensorflow.Tensor</dt>
+<dd>A tensor contains the selected dataset index, and performance measure of each experiment.</dd>
+<dt>extra_args: tuple</dt>
+<dd>A tuple contains extra parameters of the IRT model.
+(irt type, logit_delta, delta, log_a, log_2)</dd>
+</dl>
+<dl class="docutils">
+<dt>L: tensorflow.Tensor</dt>
+<dd>The negative log-likelihood.</dd>
+<dt>g: tensorflow.Tensor</dt>
+<dd>The gradient of the parameters.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.cat.m_beta_3_irt">
+<code class="descclassname">atml.cat.</code><code class="descname">m_beta_3_irt</code><span class="sig-paren">(</span><em>logit_theta</em>, <em>logit_delta</em>, <em>log_a</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/cat.html#m_beta_3_irt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.cat.m_beta_3_irt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict the expected response for a set of IRT parameters</p>
+<dl class="docutils">
+<dt>logit_theta: numpy.ndarray</dt>
+<dd>The logit_theta parameter of the Beta-3 IRT model.</dd>
+<dt>logit_delta: numpy.ndarray</dt>
+<dd>The logit_delta parameter of the Beta-3 IRT model.</dd>
+<dt>log_a: numpy.ndarray</dt>
+<dd>The log_a parameter of the Beta-3 IRT model.</dd>
+</dl>
+<dl class="docutils">
+<dt>E: numpy.ndarray</dt>
+<dd>The expected performance measurement.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.cat.m_logistic_irt">
+<code class="descclassname">atml.cat.</code><code class="descname">m_logistic_irt</code><span class="sig-paren">(</span><em>theta</em>, <em>delta</em>, <em>log_a</em>, <em>log_s2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/cat.html#m_logistic_irt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.cat.m_logistic_irt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict the expected response for a set of IRT parameters</p>
+<dl class="docutils">
+<dt>theta: numpy.ndarray</dt>
+<dd>The theta parameter of the Logistic IRT model.</dd>
+<dt>delta: numpy.ndarray</dt>
+<dd>The delta parameter of the Logistic IRT model.</dd>
+<dt>log_a: numpy.ndarray</dt>
+<dd>The log_a parameter of the Logistic IRT model.</dd>
+<dt>log_s2: numpy.ndarray</dt>
+<dd>The log_s2 parameter of the Logistic IRT model.</dd>
+</dl>
+<dl class="docutils">
+<dt>E: numpy.ndarray</dt>
+<dd>The expected performance measurement.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.cat.ml_beta_3_obj">
+<code class="descclassname">atml.cat.</code><code class="descname">ml_beta_3_obj</code><span class="sig-paren">(</span><em>logit_theta</em>, <em>logit_delta</em>, <em>log_a</em>, <em>measure</em>, <em>tested_list</em>, <em>using_samples=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/cat.html#ml_beta_3_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.cat.ml_beta_3_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>The log-likelihood objective function of the Logistic IRT model</p>
+<dl class="docutils">
+<dt>logit_theta: tensorflow.Variable</dt>
+<dd>The current ability parameter of the IRT model.</dd>
+<dt>logit_delta: tf.Tensor</dt>
+<dd>The current logit_delta parameter of the IRT model.</dd>
+<dt>log_a: tf.Tensor</dt>
+<dd>The current log_a parameter of the IRT model.</dd>
+<dt>measure: tf.Tensor</dt>
+<dd>The performance measurements for the selected datasets.</dd>
+<dt>tested_list: tf.Tensor</dt>
+<dd>The index of each selected dataset.</dd>
+<dt>using_samples: boolean</dt>
+<dd>Whether to return the sample-wise negative log-likelihood.</dd>
+</dl>
+<dl class="docutils">
+<dt>nll: tf.Tensor</dt>
+<dd>The negative log-likelihood of the IRT model.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.cat.ml_logistic_obj">
+<code class="descclassname">atml.cat.</code><code class="descname">ml_logistic_obj</code><span class="sig-paren">(</span><em>theta</em>, <em>delta</em>, <em>log_a</em>, <em>log_s2</em>, <em>measure</em>, <em>tested_list</em>, <em>using_samples=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/cat.html#ml_logistic_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.cat.ml_logistic_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>The log-likelihood objective function of the Logistic IRT model</p>
+<dl class="docutils">
+<dt>theta: tensorflow.Variable</dt>
+<dd>The current ability parameter of the IRT model.</dd>
+<dt>delta: tf.Tensor</dt>
+<dd>The current delta parameter of the IRT model.</dd>
+<dt>log_a: tf.Tensor</dt>
+<dd>The current log_a parameter of the IRT model.</dd>
+<dt>log_s2: tf.Tensor</dt>
+<dd>The current log_s2 parameter of the IRT model.</dd>
+<dt>measure: tf.Tensor</dt>
+<dd>The performance measurements for the selected datasets.</dd>
+<dt>tested_list: tf.Tensor</dt>
+<dd>The index of each selected dataset.</dd>
+<dt>using_samples: boolean</dt>
+<dd>Whether to return the sample-wise negative log-likelihood.</dd>
+</dl>
+<dl class="docutils">
+<dt>nll: tf.Tensor</dt>
+<dd>The negative log-likelihood of the IRT model.</dd>
+</dl>
+</dd></dl>
+
 </div>
 <div class="section" id="module-atml.exp">
 <span id="atml-exp-module"></span><h2>atml.exp module<a class="headerlink" href="#module-atml.exp" title="Permalink to this headline">¶</a></h2>
@@ -156,8 +392,311 @@ Example: data_dict = {0: ‘iris’, 1: ‘digits’, 2: ‘wine’}</dd>
 </dd></dl>
 
 </div>
-<div class="section" id="atml-irt-module">
-<h2>atml.irt module<a class="headerlink" href="#atml-irt-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-atml.irt">
+<span id="atml-irt-module"></span><h2>atml.irt module<a class="headerlink" href="#module-atml.irt" title="Permalink to this headline">¶</a></h2>
+<p>The :mod:’atml.irt’ module contains a set of statistical models based on the Item Response Theory.</p>
+<dl class="class">
+<dt id="atml.irt.Beta_3_IRT">
+<em class="property">class </em><code class="descclassname">atml.irt.</code><code class="descname">Beta_3_IRT</code><a class="reference internal" href="_modules/atml/irt.html#Beta_3_IRT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.Beta_3_IRT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The class for the Beta-3 IRT model.</p>
+<dl class="method">
+<dt id="atml.irt.Beta_3_IRT.curve">
+<code class="descname">curve</code><span class="sig-paren">(</span><em>d_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#Beta_3_IRT.curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.Beta_3_IRT.curve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the item characteristic curve (expectation, 0.75, 0.5, 0.25 percentile) for a given dataset</p>
+<dl class="docutils">
+<dt>d_id: int</dt>
+<dd>The index of the given dataset.</dd>
+</dl>
+<dl class="docutils">
+<dt>E: numpy.ndarray</dt>
+<dd>The curve values of the expectation.</dd>
+<dt>E_up: numpy.ndarray</dt>
+<dd>The curve values of the 0.75 percentile.</dd>
+<dt>E_mid: numpy.ndarray</dt>
+<dd>The curve values of the 0.5 percentile (median).</dd>
+<dt>E_low: numpy.ndarray</dt>
+<dd>The curve values of the 0.25 percentile.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="atml.irt.Beta_3_IRT.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>dataset_list</em>, <em>dataset</em>, <em>model_list</em>, <em>model</em>, <em>measure</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#Beta_3_IRT.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.Beta_3_IRT.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the IRT model to a collection of testing results.</p>
+<dl class="docutils">
+<dt>dataset_list: list</dt>
+<dd>The list contains all the reference names of the datasets.</dd>
+<dt>dataset: numpy.ndarray</dt>
+<dd>A (n_experiment, ) numpy array contains the dataset index of each experiment</dd>
+<dt>model_list: list</dt>
+<dd>The list contains all the reference names of the models.</dd>
+<dt>model: numpy.ndarray</dt>
+<dd>A (n_experiment, ) numpy array contains the model index of each experiment.</dd>
+<dt>measure: numpy.ndarray</dt>
+<dd>A (n_experiment, ) numpy array contains the performance measurement of each experiment.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="atml.irt.Beta_3_IRT.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>dataset</em>, <em>model</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#Beta_3_IRT.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.Beta_3_IRT.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict the expected response for a set of combinations between different models and datasets</p>
+<dl class="docutils">
+<dt>dataset: numpy.ndarray</dt>
+<dd>A (n_test, ) numpy array contains the dataset index of each testing experiment.</dd>
+<dt>model: numpy.ndarray</dt>
+<dd>A (n_test, ) numpy array contains the model index of each testing experiment.</dd>
+</dl>
+<dl class="docutils">
+<dt>E: numpy.ndarray</dt>
+<dd>A (n_test, ) numpy array contains the expected performance measurement of each testing experiment.</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="atml.irt.Logistic_IRT">
+<em class="property">class </em><code class="descclassname">atml.irt.</code><code class="descname">Logistic_IRT</code><a class="reference internal" href="_modules/atml/irt.html#Logistic_IRT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.Logistic_IRT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The class for the Logistic IRT model.</p>
+<dl class="method">
+<dt id="atml.irt.Logistic_IRT.curve">
+<code class="descname">curve</code><span class="sig-paren">(</span><em>d_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#Logistic_IRT.curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.Logistic_IRT.curve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the item characteristic curve (expectation, 0.75, 0.5, 0.25 percentile) for a given dataset</p>
+<dl class="docutils">
+<dt>d_id: int</dt>
+<dd>The index of the given dataset.</dd>
+</dl>
+<dl class="docutils">
+<dt>E: numpy.ndarray</dt>
+<dd>The curve values of the expectation.</dd>
+<dt>E_up: numpy.ndarray</dt>
+<dd>The curve values of the 0.75 percentile.</dd>
+<dt>E_mid: numpy.ndarray</dt>
+<dd>The curve values of the 0.5 percentile (median).</dd>
+<dt>E_low: numpy.ndarray</dt>
+<dd>The curve values of the 0.25 percentile.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="atml.irt.Logistic_IRT.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>dataset_list</em>, <em>dataset</em>, <em>model_list</em>, <em>model</em>, <em>measure</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#Logistic_IRT.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.Logistic_IRT.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the IRT model to a collection of testing results.</p>
+<dl class="docutils">
+<dt>dataset_list: list</dt>
+<dd>The list contains all the reference names of the datasets.</dd>
+<dt>dataset: numpy.ndarray</dt>
+<dd>A (n_experiment, ) numpy array contains the dataset index of each experiment</dd>
+<dt>model_list: list</dt>
+<dd>The list contains all the reference names of the models.</dd>
+<dt>model: numpy.ndarray</dt>
+<dd>A (n_experiment, ) numpy array contains the model index of each experiment.</dd>
+<dt>measure: atml.Measure</dt>
+<dd>A (n_experiment, ) numpy array contains the performance measurement of each experiment.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="atml.irt.Logistic_IRT.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>dataset</em>, <em>model</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#Logistic_IRT.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.Logistic_IRT.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict the expected response for a set of combinations between different models and datasets</p>
+<dl class="docutils">
+<dt>dataset: numpy.ndarray</dt>
+<dd>A (n_test, ) numpy array contains the dataset index of each testing experiment.</dd>
+<dt>model: numpy.ndarray</dt>
+<dd>A (n_test, ) numpy array contains the model index of each testing experiment.</dd>
+</dl>
+<dl class="docutils">
+<dt>E: numpy.ndarray</dt>
+<dd>A (n_test, ) numpy array contains the expected performance measurement of each testing experiment.</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.irt.get_E_beta_3">
+<code class="descclassname">atml.irt.</code><code class="descname">get_E_beta_3</code><span class="sig-paren">(</span><em>parameter</em>, <em>fid</em>, <em>did</em>, <em>N_data</em>, <em>N_flow</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#get_E_beta_3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.get_E_beta_3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict the expected response for a set of combinations between different models and datasets</p>
+<dl class="docutils">
+<dt>parameter: numpy.ndarray</dt>
+<dd>The estimated parameters for the Beta-3 IRT model.</dd>
+<dt>fid: numpy.ndarray</dt>
+<dd>A (n_test, ) numpy array contains the model index of each testing experiment.</dd>
+<dt>did: numpy.ndarray</dt>
+<dd>A (n_test, ) numpy array contains the dataset index of each testing experiment.</dd>
+<dt>N_data: int</dt>
+<dd>The total number of datasets in the IRT model.</dd>
+<dt>N_flow: int</dt>
+<dd>The total number of models in the IRT model.</dd>
+</dl>
+<dl class="docutils">
+<dt>E: numpy.ndarray</dt>
+<dd>A (n_test, ) numpy array contains the expected performance measurement of each testing experiment.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.irt.get_E_logistic">
+<code class="descclassname">atml.irt.</code><code class="descname">get_E_logistic</code><span class="sig-paren">(</span><em>parameter</em>, <em>fid</em>, <em>did</em>, <em>N_data</em>, <em>N_flow</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#get_E_logistic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.get_E_logistic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict the expected response for a set of combinations between different models and datasets</p>
+<dl class="docutils">
+<dt>parameter: numpy.ndarray</dt>
+<dd>The estimated parameters for the Logistic IRT model.</dd>
+<dt>fid: numpy.ndarray</dt>
+<dd>A (n_test, ) numpy array contains the model index of each testing experiment.</dd>
+<dt>did: numpy.ndarray</dt>
+<dd>A (n_test, ) numpy array contains the dataset index of each testing experiment.</dd>
+<dt>N_data: int</dt>
+<dd>The total number of datasets in the IRT model.</dd>
+<dt>N_flow: int</dt>
+<dd>The total number of models in the IRT model.</dd>
+</dl>
+<dl class="docutils">
+<dt>E: numpy.ndarray</dt>
+<dd>A (n_test, ) numpy array contains the expected performance measurement of each testing experiment.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.irt.get_curve_beta3">
+<code class="descclassname">atml.irt.</code><code class="descname">get_curve_beta3</code><span class="sig-paren">(</span><em>parameter</em>, <em>did</em>, <em>N_data</em>, <em>N_flow</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#get_curve_beta3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.get_curve_beta3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the item characteristic curve (expectation, 0.75, 0.5, 0.25 percentile) for a given dataset</p>
+<dl class="docutils">
+<dt>parameter: numpy.ndarray</dt>
+<dd>The estimated parameters for the Beta-3 IRT model.</dd>
+<dt>did: int</dt>
+<dd>The index of the given dataset.</dd>
+<dt>N_data: int</dt>
+<dd>The total number of datasets in the IRT model.</dd>
+<dt>N_flow: int</dt>
+<dd>The total number of models in the IRT model.</dd>
+</dl>
+<dl class="docutils">
+<dt>E: numpy.ndarray</dt>
+<dd>The curve values of the expectation.</dd>
+<dt>E_up: numpy.ndarray</dt>
+<dd>The curve values of the 0.75 percentile.</dd>
+<dt>E_mid: numpy.ndarray</dt>
+<dd>The curve values of the 0.5 percentile (median).</dd>
+<dt>E_low: numpy.ndarray</dt>
+<dd>The curve values of the 0.25 percentile.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.irt.get_curve_logistic">
+<code class="descclassname">atml.irt.</code><code class="descname">get_curve_logistic</code><span class="sig-paren">(</span><em>parameter</em>, <em>did</em>, <em>N_data</em>, <em>N_flow</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#get_curve_logistic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.get_curve_logistic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate the item characteristic curve (expectation, 0.75, 0.5, 0.25 percentile) for a given dataset</p>
+<dl class="docutils">
+<dt>parameter: numpy.ndarray</dt>
+<dd>The estimated parameters for the Logistic IRT model.</dd>
+<dt>did: int</dt>
+<dd>The index of the given dataset.</dd>
+<dt>N_data: int</dt>
+<dd>The total number of datasets in the IRT model.</dd>
+<dt>N_flow: int</dt>
+<dd>The total number of models in the IRT model.</dd>
+</dl>
+<dl class="docutils">
+<dt>E: numpy.ndarray</dt>
+<dd>The curve values of the expectation.</dd>
+<dt>E_up: numpy.ndarray</dt>
+<dd>The curve values of the 0.75 percentile.</dd>
+<dt>E_mid: numpy.ndarray</dt>
+<dd>The curve values of the 0.5 percentile (median).</dd>
+<dt>E_low: numpy.ndarray</dt>
+<dd>The curve values of the 0.25 percentile.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.irt.get_obj">
+<code class="descclassname">atml.irt.</code><code class="descname">get_obj</code><span class="sig-paren">(</span><em>parameter</em>, <em>data</em>, <em>extra_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#get_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.get_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper function to get the value of the objective function.</p>
+<dl class="docutils">
+<dt>parameter: tensorflow.Variable</dt>
+<dd>The parameter of the IRT model.</dd>
+<dt>data: tensorflow.Tensor</dt>
+<dd>A (n_batch, 3) tensor contains the model index, dataset index, and performance measure of each experiment.</dd>
+<dt>extra_args: tuple</dt>
+<dd>A tuple contains extra information for the IRT model.
+(irt type, total number of datasets, total number of models)</dd>
+</dl>
+<dl class="docutils">
+<dt>L: tensorflow.Tensor</dt>
+<dd>The averaged log-likelihood of the IRT model.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.irt.get_obj_g">
+<code class="descclassname">atml.irt.</code><code class="descname">get_obj_g</code><span class="sig-paren">(</span><em>parameter</em>, <em>data</em>, <em>extra_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#get_obj_g"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.get_obj_g" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper function to get the gradient of the objective function.</p>
+<dl class="docutils">
+<dt>parameter: tensorflow.Variable</dt>
+<dd>The parameter of the IRT model.</dd>
+<dt>data: tensorflow.Tensor</dt>
+<dd>A (n_batch, 3) tensor contains the model index, dataset index, and performance measure of each experiment.</dd>
+<dt>extra_args: tuple</dt>
+<dd>A tuple contains extra information for the IRT model.
+(irt type, total number of datasets, total number of models)</dd>
+</dl>
+<p>L: tensorflow.Tensor</p>
+<p>g: tensorflow.Tensor</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.irt.ml_beta_3_obj">
+<code class="descclassname">atml.irt.</code><code class="descname">ml_beta_3_obj</code><span class="sig-paren">(</span><em>parameter</em>, <em>fid</em>, <em>did</em>, <em>measure</em>, <em>N_data</em>, <em>N_flow</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#ml_beta_3_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.ml_beta_3_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>The log-likelihood objective function of the Beta-3 IRT model</p>
+<dl class="docutils">
+<dt>parameter: tensorflow.Variable</dt>
+<dd>The parameters for the Beta-3 IRT model.</dd>
+<dt>fid: tf.Tensor</dt>
+<dd>A (n_batch, ) tensorflow array contains the dataset index of each experiment.</dd>
+<dt>did: tf.Tensor</dt>
+<dd>A (n_batch, ) tensorflow array contains the model index of each experiment.</dd>
+<dt>measure: tf.Tensor</dt>
+<dd>A (n_batch, ) tensorflow array contains the performance measurement of each experiment.</dd>
+<dt>N_data: int</dt>
+<dd>The total number of datasets in the IRT model.</dd>
+<dt>N_flow: int</dt>
+<dd>The total number of models in the IRT model.</dd>
+</dl>
+<dl class="docutils">
+<dt>L: tf.Tensor</dt>
+<dd>The averaged log-likelihood of the IRT model.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="atml.irt.ml_logistic_obj">
+<code class="descclassname">atml.irt.</code><code class="descname">ml_logistic_obj</code><span class="sig-paren">(</span><em>parameter</em>, <em>fid</em>, <em>did</em>, <em>measure</em>, <em>N_data</em>, <em>N_flow</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/irt.html#ml_logistic_obj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.irt.ml_logistic_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>The log-likelihood objective function of the Logistic IRT model</p>
+<dl class="docutils">
+<dt>parameter: tensorflow.Variable</dt>
+<dd>The parameters for the Logistic IRT model.</dd>
+<dt>fid: tf.Tensor</dt>
+<dd>A (n_batch, ) tensorflow array contains the dataset index of each experiment.</dd>
+<dt>did: tf.Tensor</dt>
+<dd>A (n_batch, ) tensorflow array contains the model index of each experiment.</dd>
+<dt>measure: tf.Tensor</dt>
+<dd>A (n_batch, ) tensorflow array contains the performance measurement of each experiment.</dd>
+<dt>N_data: int</dt>
+<dd>The total number of datasets in the IRT model.</dd>
+<dt>N_flow: int</dt>
+<dd>The total number of models in the IRT model.</dd>
+</dl>
+<dl class="docutils">
+<dt>L: tf.Tensor</dt>
+<dd>The averaged log-likelihood of the IRT model.</dd>
+</dl>
+</dd></dl>
+
 </div>
 <div class="section" id="module-atml.measure">
 <span id="atml-measure-module"></span><h2>atml.measure module<a class="headerlink" href="#module-atml.measure" title="Permalink to this headline">¶</a></h2>
@@ -274,8 +813,38 @@ Example: data_dict = {0: ‘iris’, 1: ‘digits’, 2: ‘wine’}</dd>
 </dd></dl>
 
 </div>
-<div class="section" id="atml-visualisation-module">
-<h2>atml.visualisation module<a class="headerlink" href="#atml-visualisation-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-atml.visualisation">
+<span id="atml-visualisation-module"></span><h2>atml.visualisation module<a class="headerlink" href="#module-atml.visualisation" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="atml.visualisation.get_beta3_curve">
+<code class="descclassname">atml.visualisation.</code><code class="descname">get_beta3_curve</code><span class="sig-paren">(</span><em>data_idx</em>, <em>data_ref</em>, <em>beta_mdl</em>, <em>res</em>, <em>measure</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/visualisation.html#get_beta3_curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.visualisation.get_beta3_curve" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="atml.visualisation.get_beta3_figures">
+<code class="descclassname">atml.visualisation.</code><code class="descname">get_beta3_figures</code><span class="sig-paren">(</span><em>target_measure=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/visualisation.html#get_beta3_figures"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.visualisation.get_beta3_figures" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="atml.visualisation.get_cat_figures">
+<code class="descclassname">atml.visualisation.</code><code class="descname">get_cat_figures</code><span class="sig-paren">(</span><em>target_measure</em>, <em>test_mdl_class</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/visualisation.html#get_cat_figures"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.visualisation.get_cat_figures" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="atml.visualisation.get_gp_curve">
+<code class="descclassname">atml.visualisation.</code><code class="descname">get_gp_curve</code><span class="sig-paren">(</span><em>target_measure=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/visualisation.html#get_gp_curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.visualisation.get_gp_curve" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="atml.visualisation.get_logistic_curve">
+<code class="descclassname">atml.visualisation.</code><code class="descname">get_logistic_curve</code><span class="sig-paren">(</span><em>data_idx</em>, <em>data_ref</em>, <em>logistic_mdl</em>, <em>res</em>, <em>measure</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/visualisation.html#get_logistic_curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.visualisation.get_logistic_curve" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="atml.visualisation.get_logistic_figures">
+<code class="descclassname">atml.visualisation.</code><code class="descname">get_logistic_figures</code><span class="sig-paren">(</span><em>target_measure=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/atml/visualisation.html#get_logistic_figures"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#atml.visualisation.get_logistic_figures" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
 <div class="section" id="module-atml">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-atml" title="Permalink to this headline">¶</a></h2>
