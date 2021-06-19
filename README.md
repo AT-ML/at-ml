@@ -26,7 +26,7 @@ These inferences allow the researchers to estimate the final results without spe
 User installation
 -----------------
 
-The @ML (at-ml) package can be installed from Pypi with the command
+The @ML (at-ml) package can be installed from Pypi with the command.
 
 ```
 pip install at-ml
@@ -40,7 +40,7 @@ The documentation can be found at https://at-ml.github.io/at-ml/
 Example notebooks
 -----------------
 
-Servel example notebooks can be seen at https://github.com/AT-ML/at-ml/tree/main/notebooks
+Several example notebooks can be seen at https://github.com/AT-ML/at-ml/tree/main/notebooks
 
 Citation
 --------
@@ -62,3 +62,5 @@ Acknowledgements
 ----------------
 
 This toolbox is delivered as a part of the project: Measurement theory for data science and AI, funded by the Alan Turing Insititute (https://www.turing.ac.uk/research/research-projects/measurement-theory-data-science-and-ai). 
+  
+    
